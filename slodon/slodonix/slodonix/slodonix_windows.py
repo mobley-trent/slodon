@@ -4,9 +4,11 @@ from ctypes import windll as w
 # This project
 from slodon.slodonix.systems.windows.keyboard_map import full_map as key_map
 from slodon.slodonix.systems.windows.utils import *
+from slodon.slodonix.systems.windows.structures import *
 
 __all__ = ["Display", "get_os", "DisplayContext"]
 
+INPUT_KEYBOARD = 1
 
 class Screen:
     """
@@ -45,7 +47,13 @@ class _Interact:
         if key_map[key] is None:  # the key is not valid
             return
 
-        w.user32.keybd_event(key_map[key], 0, 0, 0)
+        keybd_obj = KEYBDINPUT(key_map[key], 0, 0, 0, 0)
+        input_obj = INPUT(INPUT_KEYBOARD, keybd_obj)
+        w.user32.SendInput(
+            1,
+            ctypes.byref(input_obj),
+            ctypes.sizeof(input_obj),
+        )
 
     def position(self) -> Position:
         """

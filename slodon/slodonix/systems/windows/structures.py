@@ -3,6 +3,10 @@ from ctypes import wintypes
 # Basic structures
 # https://coderslegacy.com/structs-with-python-ctypes/
 
+# Documented here: http://msdn.microsoft.com/en-us/library/windows/desktop/ms646304(v=vs.85).aspx
+KEYEVENTF_KEYDOWN = 0x0000 # Technically this constant doesn't exist in the MS documentation. It's the lack of KEYEVENTF_KEYUP that means pressing the key down.
+KEYEVENTF_KEYUP = 0x0002
+
 
 class MOUSEINPUT(ctypes.Structure):
     """

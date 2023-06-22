@@ -5,6 +5,8 @@ from ctypes import windll as w
 from slodon.slodonix.systems.windows.keyboard_map import full_map as key_map
 from slodon.slodonix.systems.windows.utils import *
 from slodon.slodonix.systems.windows.structures import *
+from . import *
+
 
 __all__ = ["Display", "get_os", "DisplayContext"]
 
@@ -43,17 +45,21 @@ class _Interact:
         ### Returns
           - None
         """
-
         if key_map[key] is None:  # the key is not valid
             return
 
-        keybd_obj = KEYBDINPUT(key_map[key], 0, 0, 0, 0)
-        input_obj = INPUT(INPUT_KEYBOARD, keybd_obj)
-        w.user32.SendInput(
-            1,
-            ctypes.byref(input_obj),
-            ctypes.sizeof(input_obj),
-        )
+        needsShift = isShiftCharacter(key)
+
+        mods, vkCode = divmod(key_map[key], 0x100)
+        for apply_mod, vk_mod in [(mods & 4, 0x12), (mods & 2, 0x11),
+                                  (mods & 1 or needsShift, 0x10)]:
+            if apply_mod:
+                w.user32.keybd_event(vk_mod, 0, KEYEVENTF_KEYDOWN, 0)
+        w.user32.keybd_event(vkCode, 0, KEYEVENTF_KEYDOWN, 0)
+        for apply_mod, vk_mod in [(mods & 1 or needsShift, 0x10), (mods & 2, 0x11),
+                                  (mods & 4, 0x12)]:
+            if apply_mod:
+                w.user32.keybd_event(vk_mod, 0, KEYEVENTF_KEYUP, 0)
 
     def position(self) -> Position:
         """

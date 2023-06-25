@@ -1,3 +1,9 @@
+# Constants for the mouse button names:
+LEFT = "left"
+MIDDLE = "middle"
+RIGHT = "right"
+
+
 def isShiftCharacter(character):
     """
     Returns True if the ``character`` is a keyboard key that would require the shift key to be held down, such as

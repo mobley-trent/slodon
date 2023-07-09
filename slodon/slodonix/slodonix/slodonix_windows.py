@@ -1,5 +1,5 @@
 # https://www.win7dll.info/user32_dll.html
-from ctypes import windll as w
+from ctypes import windll as w, c_long
 import ctypes
 
 # This project
@@ -188,25 +188,135 @@ class _Interact:
             # see https://github.com/asweigart/pyautogui/issues/60
             pass
 
-    def click(self):
-        """ """
-        pass
+    def click(self, x, y, button):
+        """
+        - https://docs.microsoft.com/en-us/windows/desktop/api/winuser/nf-winuser-mouse_event
+        - https://github.com/asweigart/pyautogui/blob/master/pyautogui/_pyautogui_win.py#L432
+        Sends the mouse click event to Windows.
+        Args:
+            x (int): The x position of the mouse event.
+            y (int): The y position of the mouse event.
+            button (str): The mouse button, either 'LEFT',
+            'RIGHT' or 'MIDDLE'
+        Returns:
+            None
+        """
+
+        if button not in (LEFT, MIDDLE, RIGHT):
+            raise ValueError(
+                'button arg to _click() must be one of "left", "middle", or "right", not %s'
+                % button
+            )
+
+        if button == LEFT:
+            EV = MOUSEEVENTF_LEFTCLICK
+        elif button == MIDDLE:
+            EV = MOUSEEVENTF_MIDDLECLICK
+        elif button == RIGHT:
+            EV = MOUSEEVENTF_RIGHTCLICK
+
+        try:
+            self.send_mouse_event(EV, x, y)
+        except (PermissionError, OSError):
+            pass
 
     def mouse_is_swapped(self):
-        """ """
-        pass
+        """
+        - https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getsystemmetrics
+        - https://github.com/asweigart/pyautogui/blob/master/pyautogui/_pyautogui_win.py#L461
+        Checks if the meanings of the left and right
+        mouse buttons are swapped
+        """
+        return ctypes.windll.user32.GetSystemMetrics(23) != 0
 
-    def send_mouse_event(self):
-        """ """
-        pass
+    def send_mouse_event(self, ev, x, y, dwData=0):
+        """
+        - https://docs.microsoft.com/en-us/windows/desktop/api/winuser/nf-winuser-mouse_event
+        - https://github.com/asweigart/pyautogui/blob/master/pyautogui/_pyautogui_win.py#L466
+        Helper function that makes the call to the mouse_event
+        win32 function.
+        Args:
+            ev (int): The win32 code for the mouse event. Use one of
+            the MOUSEEVENTF_* constants for this argument.
+            x (int): The x position of the mouse event.
+            y (int): The y position of the mouse event.
+            dwData (int): The argument for mouse_event()'s dwData
+            parameter. Only used by mouse scrolling.
+        Returns:
+            None.
+        """
+        assert (x is not None) and (y is not None), "x and y cannot be set to None"
+        # TODO: ARG! For some reason, SendInput isn't working for mouse events. I'm switching to using the older mouse_event win32 function.
+        # mouseStruct = MOUSEINPUT()
+        # mouseStruct.dx = x
+        # mouseStruct.dy = y
+        # mouseStruct.mouseData = ev
+        # mouseStruct.time = 0
+        # mouseStruct.dwExtraInfo = ctypes.pointer(ctypes.c_ulong(0)) # according to https://stackoverflow.com/questions/13564851/generate-keyboard-events I can just set this. I don't really care about this value.
+        # inputStruct = INPUT()
+        # inputStruct.mi = mouseStruct
+        # inputStruct.type = INPUT_MOUSE
+        # ctypes.windll.user32.SendInput(1, ctypes.pointer(inputStruct), ctypes.sizeof(inputStruct))
 
-    def scrool(self):
-        """ """
-        pass
+        # TODO Note: We need to handle additional buttons, which I believe is documented here:
+        # https://docs.microsoft.com/en-us/windows/desktop/api/winuser/nf-winuser-mouse_event
 
-    def hscrool(self):
-        """ """
-        pass
+        width, height = self.size()
+        convertedX = 65536 * x // width + 1
+        convertedY = 65536 * y // height + 1
+        w.user32.mouse_event(ev, c_long(convertedX), c_long(convertedY), dwData, 0)
+
+    def scroll(self, clicks, x=None, y=None):
+        """
+        - https://docs.microsoft.com/en-us/windows/desktop/api/winuser/nf-winuser-mouse_event
+        - https://github.com/asweigart/pyautogui/blob/master/pyautogui/_pyautogui_win.py#L507
+        Send the mouse vertical scroll event to Windows by calling
+        the mouse_event() win32 function.
+        Args:
+            clicks (int): The amount of scrolling to do. A positive value
+            is the mouse wheel moving forward (scrolling up), a negative value
+            is backwards (down).
+            x (int): The x position of the mouse event.
+            y (int): The y position of the mouse event.
+        Returns:
+            None
+        """
+        startx, starty = self.position()
+        width, height = self.size()
+
+        if x is None:
+            x = startx
+        else:
+            if x < 0:
+                x = 0
+            elif x >= width:
+                x = width - 1
+        if y is None:
+            y = starty
+        else:
+            if y < 0:
+                y = 0
+            elif y >= height:
+                y = height - 1
+
+        try:
+            self.send_mouse_event(MOUSEEVENTF_WHEEL, x, y, dwData=clicks)
+        except (PermissionError, OSError):
+            pass
+
+    def hscroll(self, clicks, x, y):
+        """
+        - https://docs.microsoft.com/en-us/windows/desktop/api/winuser/nf-winuser-mouse_event
+        - https://github.com/asweigart/pyautogui/blob/master/pyautogui/_pyautogui_win.py#L544
+        Send the mouse horizontal scroll event to Windows by calling
+        the mouse_event() win32 function.
+        Args:
+            clicks (int): The amount of scrolling to do. A positive value is
+            the mouse wheel moving right, a negative value is moving left.
+        Returns:
+            None
+        """
+        return self.scroll(clicks, x, y)
 
 
 class _Info:

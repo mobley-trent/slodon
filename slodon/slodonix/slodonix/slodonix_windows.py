@@ -8,7 +8,13 @@ from slodon.slodonix.systems.windows.utils import *
 from slodon.slodonix.systems.windows.structures import POSITION, SIZE
 from slodon.slodonix.systems.windows.constants import *
 
-__all__ = ["Display", "get_os", "DisplayContext"]
+__all__ = [
+    "Display",
+    "get_os",
+    "DisplayContext",
+    "MOUSEEVENTF_LEFTCLICK",
+    "MOUSEEVENTF_MIDDLECLICK" "MOUSEEVENTF_RIGHTCLICK",
+]
 ev = MOUSEEVENTF_LEFTDOWN
 ev_up = MOUSEEVENTF_LEFTUP
 
@@ -261,7 +267,7 @@ class _Interact:
         # TODO Note: We need to handle additional buttons, which I believe is documented here:
         # https://docs.microsoft.com/en-us/windows/desktop/api/winuser/nf-winuser-mouse_event
 
-        width, height = self.size()
+        width, height = _Info.size()
         convertedX = 65536 * x // width + 1
         convertedY = 65536 * y // height + 1
         w.user32.mouse_event(ev, c_long(convertedX), c_long(convertedY), dwData, 0)
@@ -281,8 +287,8 @@ class _Interact:
         Returns:
             None
         """
-        startx, starty = self.position()
-        width, height = self.size()
+        startx, starty = _Info.position()
+        width, height = _Info.size()
 
         if x is None:
             x = startx
